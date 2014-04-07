@@ -422,6 +422,7 @@ body {
 
 .panel-body {
    overflow: hidden;
+   color: #000000;
 }
 
 .panel-image ~ input[type=checkbox] {
