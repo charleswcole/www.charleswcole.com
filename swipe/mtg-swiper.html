@@ -165,8 +165,9 @@
   .card-stack {
     position: relative;
     width: 100%;
-    height: 410px;
+    height: auto;
     display: flex; align-items: center; justify-content: center;
+    padding: 10px 0 14px; /* room for ghost card offset */
   }
 
   /* Ghost cards behind */
@@ -184,7 +185,7 @@
 
   /* Main card */
   .card-wrapper {
-    position: absolute;
+    position: relative;
     width: 280px;
     height: 390px;
     cursor: grab;
@@ -540,26 +541,15 @@
 
   @media (max-width: 380px) {
     .card-wrapper, .card-ghost, .loading-card, .empty-state { width: 240px; height: 335px; }
-    .card-stack { height: 360px; }
   }
 
   #cardArea {
-    position: absolute;
-    inset: 0;
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
   }
 
-  .card-wrapper {
-    position: relative;
-    width: 280px;
-    height: 390px;
-    cursor: grab;
-    user-select: none;
-    z-index: 5;
-    transition: filter 0.15s ease;
-  }
 </style>
 </head>
 <body>
