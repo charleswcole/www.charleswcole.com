@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cardswipe — MTG</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cinzel:wght@400;600&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #e8cc7a;
+    --gold-dark: #8a6a1f;
+    --deep: #0a0a0f;
+    --card-bg: #111118;
+    --surface: #16161f;
+    --surface2: #1e1e2a;
+    --text: #e8e0d0;
+    --text-muted: #8a8070;
+    --like: #4caf7d;
+    --dislike: #e05252;
+    --like-glow: rgba(76, 175, 125, 0.4);
+    --dislike-glow: rgba(224, 82, 82, 0.4);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--deep);
+    color: var(--text);
+    font-family: 'Crimson Text', Georgia, serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(201, 168, 76, 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(100, 60, 180, 0.06) 0%, transparent 50%);
+  }
+
+  /* Arcane particle background */
+  .bg-runes {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .rune {
+    position: absolute;
+    font-size: 1.2rem;
+    color: rgba(201, 168, 76, 0.06);
+    animation: floatRune linear infinite;
+    font-family: 'Cinzel', serif;
+    user-select: none;
+  }
+  @keyframes floatRune {
+    0% { transform: translateY(110vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+  }
+
+  header {
+    position: relative; z-index: 10;
+    text-align: center;
+    padding: 2rem 1rem 0.5rem;
+  }
+  header h1 {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    color: var(--gold);
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 30px rgba(201, 168, 76, 0.4), 0 2px 4px rgba(0,0,0,0.8);
+  }
+  header p {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-style: italic;
+    margin-top: 0.3rem;
+  }
+
+  .divider {
+    width: 200px;
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
+    margin: 0.8rem auto;
+    position: relative;
+  }
+  .divider::before {
+    content: '✦';
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: var(--gold);
+    font-size: 0.7rem;
+    background: var(--deep);
+    padding: 0 6px;
+  }
+
+  /* Stats bar */
+  .stats {
+    position: relative; z-index: 10;
+    display: flex; gap: 2rem;
+    margin-bottom: 1.5rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+  .stat { display: flex; align-items: center; gap: 0.4rem; }
+  .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .stat-dot.like { background: var(--like); box-shadow: 0 0 6px var(--like); }
+  .stat-dot.dislike { background: var(--dislike); box-shadow: 0 0 6px var(--dislike); }
+  .stat-dot.total { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .stat-count { color: var(--gold-light); font-weight: 600; }
+
+  /* Card arena */
+  .arena {
+    position: relative; z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    padding: 0 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .card-stack {
+    position: relative;
+    width: 100%;
+    height: 520px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Ghost cards behind */
+  .card-ghost {
+    position: absolute;
+    width: 280px;
+    height: 390px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid rgba(201, 168, 76, 0.1);
+    pointer-events: none;
+  }
+  .card-ghost:nth-child(1) { transform: translateY(12px) scale(0.96) rotate(2deg); opacity: 0.4; }
+  .card-ghost:nth-child(2) { transform: translateY(6px) scale(0.98) rotate(-1deg); opacity: 0.6; }
+
+  /* Main card */
+  .card-wrapper {
+    position: absolute;
+    width: 280px;
+    height: 390px;
+    cursor: grab;
+    user-select: none;
+    z-index: 5;
+    transition: filter 0.15s ease;
+  }
+  .card-wrapper:active { cursor: grabbing; }
+  .card-wrapper.dragging { transition: none; }
+
+  .card-frame {
+    width: 100%; height: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+    background: var(--card-bg);
+    box-shadow:
+      0 0 0 1px rgba(201, 168, 76, 0.3),
+      0 8px 32px rgba(0,0,0,0.7),
+      0 0 60px rgba(0,0,0,0.5);
+    transition: box-shadow 0.2s ease;
+  }
+
+.card-frame img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+  pointer-events: none;
+  border-radius: 12px;
+  background: var(--card-bg);
+}
+
+  /* Like/Dislike overlays */
+  .vote-overlay {
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+    pointer-events: none;
+    z-index: 10;
+  }
+  .vote-overlay.like-overlay {
+    background: linear-gradient(135deg, rgba(76, 175, 125, 0.6), transparent);
+    border: 3px solid var(--like);
+  }
+  .vote-overlay.dislike-overlay {
+    background: linear-gradient(225deg, rgba(224, 82, 82, 0.6), transparent);
+    border: 3px solid var(--dislike);
+  }
+  .vote-label {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    transform: rotate(-15deg);
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    padding: 0.3rem 0.8rem;
+    border-radius: 6px;
+  }
+  .like-overlay .vote-label {
+    color: var(--like);
+    border: 3px solid var(--like);
+    box-shadow: 0 0 20px var(--like-glow);
+    transform: rotate(-15deg);
+  }
+  .dislike-overlay .vote-label {
+    color: var(--dislike);
+    border: 3px solid var(--dislike);
+    box-shadow: 0 0 20px var(--dislike-glow);
+    transform: rotate(15deg);
+  }
+
+  /* Swipe hint arrows */
+  .swipe-hints {
+    display: flex; justify-content: space-between;
+    width: 100%; padding: 0 0.5rem;
+    margin-top: 0.8rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+  }
+  .hint-left { color: var(--dislike); opacity: 0.6; }
+  .hint-right { color: var(--like); opacity: 0.6; }
+
+  /* Buttons */
+  .action-buttons {
+    display: flex; gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+  .btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .btn::after {
+    content: '';
+    position: absolute; inset: -3px;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .btn-dislike {
+    background: rgba(224, 82, 82, 0.15);
+    border: 2px solid rgba(224, 82, 82, 0.5);
+    color: var(--dislike);
+  }
+  .btn-dislike:hover {
+    background: rgba(224, 82, 82, 0.3);
+    border-color: var(--dislike);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--dislike-glow);
+  }
+  .btn-like {
+    background: rgba(76, 175, 125, 0.15);
+    border: 2px solid rgba(76, 175, 125, 0.5);
+    color: var(--like);
+  }
+  .btn-like:hover {
+    background: rgba(76, 175, 125, 0.3);
+    border-color: var(--like);
+    transform: scale(1.1);
+    box-shadow: 0 0 20px var(--like-glow);
+  }
+  .btn:active { transform: scale(0.95) !important; }
+
+  /* Loading state */
+  .loading-card {
+    width: 280px; height: 390px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid rgba(201, 168, 76, 0.15);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem;
+    color: var(--text-muted);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 2px solid rgba(201, 168, 76, 0.2);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Empty state */
+  .empty-state {
+    width: 280px; height: 390px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid rgba(201, 168, 76, 0.15);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem;
+    padding: 2rem; text-align: center;
+  }
+  .empty-icon { font-size: 3rem; }
+  .empty-state h3 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold);
+    font-size: 1rem;
+  }
+  .empty-state p { color: var(--text-muted); font-size: 0.9rem; font-style: italic; }
+
+  /* Export panel */
+  .export-section {
+    position: relative; z-index: 10;
+    width: 100%; max-width: 420px;
+    padding: 0 1rem 1rem;
+    margin-top: 1.5rem;
+  }
+  .export-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    text-align: center;
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+  }
+  .export-buttons {
+    display: flex; gap: 0.8rem;
+  }
+  .export-btn {
+    flex: 1;
+    padding: 0.6rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.2s ease;
+  }
+  .export-liked {
+    border-color: rgba(76, 175, 125, 0.4);
+    color: var(--like);
+  }
+  .export-liked:hover {
+    background: rgba(76, 175, 125, 0.1);
+    border-color: var(--like);
+    box-shadow: 0 0 12px rgba(76, 175, 125, 0.2);
+  }
+  .export-disliked {
+    border-color: rgba(224, 82, 82, 0.4);
+    color: var(--dislike);
+  }
+  .export-disliked:hover {
+    background: rgba(224, 82, 82, 0.1);
+    border-color: var(--dislike);
+    box-shadow: 0 0 12px rgba(224, 82, 82, 0.2);
+  }
+  .export-all {
+    border-color: rgba(201, 168, 76, 0.4);
+    color: var(--gold);
+  }
+  .export-all:hover {
+    background: rgba(201, 168, 76, 0.1);
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(201, 168, 76, 0.2);
+  }
+
+  /* Fly-out animation */
+  @keyframes flyRight {
+    to { transform: translateX(120vw) rotate(30deg); opacity: 0; }
+  }
+  @keyframes flyLeft {
+    to { transform: translateX(-120vw) rotate(-30deg); opacity: 0; }
+  }
+  .fly-right { animation: flyRight 0.4s ease-in forwards; }
+  .fly-left  { animation: flyLeft  0.4s ease-in forwards; }
+
+  /* Card info footer (shown below card) */
+  .card-info {
+    margin-top: 1rem;
+    text-align: center;
+    min-height: 3rem;
+  }
+  .card-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--gold-light);
+    font-weight: 600;
+  }
+  .card-type {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 2rem; left: 50%;
+    transform: translateX(-50%) translateY(4rem);
+    background: var(--surface2);
+    border: 1px solid var(--gold-dark);
+    color: var(--text);
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+  }
+  .toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  @media (max-width: 380px) {
+    .card-wrapper, .card-ghost, .loading-card, .empty-state { width: 240px; height: 335px; }
+    .card-stack { height: 440px; }
+  }
+    #cardArea {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+    .card-wrapper {
+  position: relative;  /* was: absolute */
+  width: 280px;
+  height: 390px;
+  cursor: grab;
+  user-select: none;
+  z-index: 5;
+  transition: filter 0.15s ease;
+}
+</style>
+</head>
+<body>
+
+<div class="bg-runes" id="bgRunes"></div>
+
+<header>
+  <h1>CardSwipe</h1>
+  <p>Discover the cards of the Multiverse</p>
+  <div class="divider"></div>
+</header>
+
+<div class="stats">
+  <div class="stat"><div class="stat-dot like"></div><span class="stat-count" id="likeCount">0</span> Liked</div>
+  <div class="stat"><div class="stat-dot dislike"></div><span class="stat-count" id="dislikeCount">0</span> Passed</div>
+  <div class="stat"><div class="stat-dot total"></div><span class="stat-count" id="totalCount">0</span> Seen</div>
+</div>
+
+<div class="arena">
+  <div class="card-stack" id="cardStack">
+    <div class="card-ghost"></div>
+    <div class="card-ghost"></div>
+    <div id="cardArea">
+      <div class="loading-card"><div class="spinner"></div><span>Summoning card...</span></div>
+    </div>
+  </div>
+
+  <div class="card-info">
+    <div class="card-name" id="cardName"></div>
+    <div class="card-type" id="cardType"></div>
+  </div>
+
+  <div class="swipe-hints">
+    <span class="hint-left">← Pass</span>
+    <span class="hint-right">Keep →</span>
+  </div>
+
+  <div class="action-buttons">
+    <button class="btn btn-dislike" id="btnDislike" title="Pass">✕</button>
+    <button class="btn btn-like" id="btnLike" title="Keep">♥</button>
+  </div>
+</div>
+
+<div class="export-section">
+  <div class="export-title">⟡ Export Collection ⟡</div>
+  <div class="export-buttons">
+    <button class="export-btn export-liked" onclick="exportList('liked')">♥ Liked</button>
+    <button class="export-btn export-disliked" onclick="exportList('disliked')">✕ Passed</button>
+    <button class="export-btn export-all" onclick="exportList('all')">✦ All</button>
+  </div>
+</div>
+    
+
+<div class="export-section" style="margin-top: 0.5rem;">
+  <div class="export-title">⟡ Backup & Restore ⟡</div>
+  <div class="export-buttons">
+    <button class="export-btn export-all" onclick="backupState()">⬇ Backup</button>
+    <button class="export-btn export-liked" onclick="document.getElementById('restoreInput').click()">⬆ Restore</button>
+    <button class="export-btn export-disliked" onclick="clearAllData()">⊘ Clear</button>
+  </div>
+  <input type="file" id="restoreInput" accept=".json" style="display:none" onchange="restoreState(event)">
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  liked: JSON.parse(localStorage.getItem('mtg-liked') || '[]'),
+  disliked: JSON.parse(localStorage.getItem('mtg-disliked') || '[]'),
+  seen: new Set(JSON.parse(localStorage.getItem('mtg-seen') || '[]')),
+  current: null,
+  queue: [],
+  loading: false
+};
+// ── Persist ────────────────────────────────────────────────────────────────
+function saveState() {
+  localStorage.setItem('mtg-liked', JSON.stringify(state.liked));
+  localStorage.setItem('mtg-disliked', JSON.stringify(state.disliked));
+  localStorage.setItem('mtg-seen', JSON.stringify([...state.seen]));
+}
+// ── Rune background ────────────────────────────────────────────────────────
+const runes = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ','ᛈ','ᛉ','ᛊ','ᛏ','ᛒ','ᛖ','ᛗ','ᛚ','ᛜ','ᛞ','ᛟ'];
+const bgEl = document.getElementById('bgRunes');
+for (let i = 0; i < 18; i++) {
+  const el = document.createElement('div');
+  el.className = 'rune';
+  el.textContent = runes[Math.floor(Math.random() * runes.length)];
+  el.style.cssText = `
+    left: ${Math.random() * 100}%;
+    animation-duration: ${12 + Math.random() * 20}s;
+    animation-delay: ${-Math.random() * 20}s;
+    font-size: ${0.8 + Math.random() * 1.2}rem;
+  `;
+  bgEl.appendChild(el);
+}
+
+// ── Scryfall API ───────────────────────────────────────────────────────────
+async function fetchRandomCard() {
+  const r = await fetch('https://api.scryfall.com/cards/random', {
+    headers: {
+      'User-Agent': 'CardSwipe/1.0',
+      'Accept': 'application/json'
+    }
+  });
+  if (!r.ok) throw new Error('Network error');
+  return r.json();
+}
+
+async function getNextCard() {
+  let attempts = 0;
+  while (attempts < 10) {
+    try {
+      const card = await fetchRandomCard();
+      if (state.seen.has(card.id)) { attempts++; continue; }
+      const img = card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal;
+      if (!img) { attempts++; continue; }
+      return { id: card.id, name: card.name, type: card.type_line, img, set: card.set_name, manaCost: card.mana_cost || '', rarity: card.rarity };
+    } catch (e) {
+      attempts++;
+      await new Promise(res => setTimeout(res, 500));
+    }
+  }
+  return null;
+}
+
+// ── Card rendering ─────────────────────────────────────────────────────────
+function renderCard(cardData) {
+  state.current = cardData;
+  const area = document.getElementById('cardArea');
+
+  area.innerHTML = `
+    <div class="card-wrapper" id="mainCard">
+      <div class="card-frame">
+        <img src="${cardData.img}" alt="${cardData.name}" draggable="false">
+        <div class="vote-overlay like-overlay" id="likeOverlay"><div class="vote-label">KEEP</div></div>
+        <div class="vote-overlay dislike-overlay" id="dislikeOverlay"><div class="vote-label">PASS</div></div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('cardName').textContent = cardData.name;
+  document.getElementById('cardType').textContent = cardData.type;
+
+  setupDrag();
+}
+
+function showLoading() {
+  document.getElementById('cardArea').innerHTML = `<div class="loading-card"><div class="spinner"></div><span>Summoning...</span></div>`;
+  document.getElementById('cardName').textContent = '';
+  document.getElementById('cardType').textContent = '';
+}
+
+function showEmpty() {
+  document.getElementById('cardArea').innerHTML = `
+    <div class="empty-state">
+      <div class="empty-icon">🃏</div>
+      <h3>The Library is Empty</h3>
+      <p>You've seen all the cards we could summon. Refresh to venture forth again.</p>
+    </div>`;
+}
+
+// ── Drag & swipe ───────────────────────────────────────────────────────────
+function setupDrag() {
+  const card = document.getElementById('mainCard');
+  if (!card) return;
+
+  let startX = 0, startY = 0, curX = 0, isDragging = false;
+
+  function onStart(x, y) {
+    startX = x; startY = y; curX = 0;
+    isDragging = true;
+    card.classList.add('dragging');
+  }
+  function onMove(x) {
+    if (!isDragging) return;
+    curX = x - startX;
+    const rot = curX * 0.08;
+    card.style.transform = `translateX(${curX}px) rotate(${rot}deg)`;
+    const ratio = Math.min(Math.abs(curX) / 100, 1);
+    if (curX > 0) {
+      document.getElementById('likeOverlay').style.opacity = ratio;
+      document.getElementById('dislikeOverlay').style.opacity = 0;
+    } else {
+      document.getElementById('dislikeOverlay').style.opacity = ratio;
+      document.getElementById('likeOverlay').style.opacity = 0;
+    }
+  }
+  function onEnd() {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('dragging');
+    if (curX > 80) vote('liked');
+    else if (curX < -80) vote('disliked');
+    else {
+      card.style.transition = 'transform 0.35s cubic-bezier(.175,.885,.32,1.275)';
+      card.style.transform = '';
+      document.getElementById('likeOverlay').style.opacity = 0;
+      document.getElementById('dislikeOverlay').style.opacity = 0;
+      setTimeout(() => { card.style.transition = ''; }, 350);
+    }
+  }
+
+  card.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+  window.addEventListener('mousemove', e => onMove(e.clientX));
+  window.addEventListener('mouseup', onEnd);
+
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+  window.addEventListener('touchmove', e => onMove(e.touches[0].clientX), { passive: true });
+  window.addEventListener('touchend', onEnd);
+}
+
+// ── Voting ─────────────────────────────────────────────────────────────────
+async function vote(decision) {
+  if (!state.current || state.loading) return;
+  const card = document.getElementById('mainCard');
+  if (!card) return;
+
+  state.seen.add(state.current.id);
+if (decision === 'liked') {
+    state.liked.push(state.current);
+    saveState(); // ← add this
+    card.classList.add('fly-right');
+    showToast('♥ Added to your collection');
+  } else {
+    state.disliked.push(state.current);
+    saveState(); // ← add this
+    card.classList.add('fly-left');
+    showToast('✕ Passed');
+  }
+
+  updateStats();
+  state.loading = true;
+
+  await new Promise(res => setTimeout(res, 380));
+  showLoading();
+  state.current = null;
+
+  const next = await getNextCard();
+  state.loading = false;
+
+  if (!next) { showEmpty(); return; }
+  renderCard(next);
+
+  // Pre-fetch one more in background
+  getNextCard().then(c => { if (c) state.queue.push(c); });
+}
+
+// ── Buttons ────────────────────────────────────────────────────────────────
+document.getElementById('btnLike').addEventListener('click', () => vote('liked'));
+document.getElementById('btnDislike').addEventListener('click', () => vote('disliked'));
+
+// Keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'l') vote('liked');
+  if (e.key === 'ArrowLeft'  || e.key === 'h') vote('disliked');
+});
+
+    function clearAllData() {
+  if (!confirm('Clear all liked, passed, and seen cards? This cannot be undone.')) return;
+  state.liked = [];
+  state.disliked = [];
+  state.seen = new Set();
+  saveState();
+  updateStats();
+  showToast('⊘ All data cleared');
+}
+// ── Stats ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('likeCount').textContent = state.liked.length;
+  document.getElementById('dislikeCount').textContent = state.disliked.length;
+  document.getElementById('totalCount').textContent = state.liked.length + state.disliked.length;
+
+// ── Prompt backup every 100 cards ─────────────────────────────────────────
+const total = state.liked.length + state.disliked.length;
+if (total > 0 && total % 100 === 0) {
+  setTimeout(() => {
+    if (confirm(`You've reviewed ${total} cards! Save a backup now?`)) {
+      backupState();
+    }
+  }, 600); // slight delay so the card animation finishes first
+}
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────
+function exportList(which) {
+  let lines = [];
+  const fmt = c => `${c.name} | ${c.type} | ${c.set}`;
+
+  if (which === 'liked' || which === 'all') {
+    if (state.liked.length) {
+      lines.push('═══════════════════════════════');
+      lines.push('  ♥ LIKED CARDS (' + state.liked.length + ')');
+      lines.push('═══════════════════════════════');
+      state.liked.forEach((c, i) => lines.push(`${i+1}. ${fmt(c)}`));
+    }
+  }
+  if (which === 'disliked' || which === 'all') {
+    if (state.disliked.length) {
+      if (lines.length) lines.push('');
+      lines.push('═══════════════════════════════');
+      lines.push('  ✕ PASSED CARDS (' + state.disliked.length + ')');
+      lines.push('═══════════════════════════════');
+      state.disliked.forEach((c, i) => lines.push(`${i+1}. ${fmt(c)}`));
+    }
+  }
+
+  if (!lines.length) {
+    showToast('No cards in this list yet!'); return;
+  }
+
+  lines.unshift('CardSwipe — MTG Card Collection');
+  lines.unshift('Generated: ' + new Date().toLocaleString());
+  lines.unshift('');
+
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mtg-${which}-${Date.now()}.txt`;
+  a.click();
+  showToast('✦ Exported successfully!');
+}
+
+// ── Toast ──────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
+}
+// ── Backup & Restore ───────────────────────────────────────────────────────
+function backupState() {
+  const data = {
+    version: 1,
+    date: new Date().toISOString(),
+    liked: state.liked,
+    disliked: state.disliked,
+    seen: [...state.seen]
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `mtg-backup-${Date.now()}.json`;
+  a.click();
+  showToast('✦ Backup saved!');
+}
+
+function restoreState(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.liked || !data.disliked || !data.seen) throw new Error('Invalid backup');
+      state.liked = data.liked;
+      state.disliked = data.disliked;
+      state.seen = new Set(data.seen);
+      saveState();
+      updateStats();
+      showToast(`✦ Restored — ${data.liked.length} liked, ${data.disliked.length} passed`);
+    } catch {
+      showToast('✕ Invalid backup file');
+    }
+    event.target.value = ''; // reset so same file can be re-selected
+  };
+  reader.readAsText(file);
+}
+// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ───────────────────────────────────────────────────────────────────
+(async () => {
+  updateStats(); // ← add this
+  const card = await getNextCard();
+  if (card) renderCard(card);
+  else showEmpty();
+})();
+</script>
+</body>
+</html>
