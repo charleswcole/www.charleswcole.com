@@ -57,10 +57,13 @@
     100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
   }
 
+  /* ── Header — full & compact states ───────────────────────────────────── */
   header {
     position: relative; z-index: 10;
     text-align: center;
     padding: 2rem 1rem 0.5rem;
+    /* animate all sizing properties */
+    transition: padding 0.5s cubic-bezier(.4,0,.2,1);
   }
   header h1 {
     font-family: 'Cinzel Decorative', serif;
@@ -68,20 +71,35 @@
     color: var(--gold);
     letter-spacing: 0.08em;
     text-shadow: 0 0 30px rgba(201, 168, 76, 0.4), 0 2px 4px rgba(0,0,0,0.8);
+    transition: font-size 0.5s cubic-bezier(.4,0,.2,1),
+                letter-spacing 0.5s cubic-bezier(.4,0,.2,1);
   }
   header p {
     color: var(--text-muted);
     font-size: 0.95rem;
     font-style: italic;
     margin-top: 0.3rem;
+    /* fade + collapse */
+    max-height: 2rem;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(.4,0,.2,1),
+                opacity 0.4s ease,
+                margin-top 0.4s ease;
   }
-
   .divider {
     width: 200px;
     height: 1px;
     background: linear-gradient(to right, transparent, var(--gold-dark), transparent);
     margin: 0.8rem auto;
     position: relative;
+    /* fade + collapse */
+    max-height: 2rem;
+    opacity: 1;
+    overflow: hidden;
+    transition: max-height 0.5s cubic-bezier(.4,0,.2,1),
+                opacity 0.4s ease,
+                margin 0.4s ease;
   }
   .divider::before {
     content: '✦';
@@ -94,14 +112,37 @@
     padding: 0 6px;
   }
 
+  /* Compact state — applied after first swipe */
+  body.compact header {
+    padding: 0.6rem 1rem 0.3rem;
+  }
+  body.compact header h1 {
+    font-size: clamp(0.85rem, 3vw, 1.1rem);
+    letter-spacing: 0.05em;
+  }
+  body.compact header p {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+  }
+  body.compact .divider {
+    max-height: 0;
+    opacity: 0;
+    margin: 0 auto;
+  }
+
   /* Stats bar */
   .stats {
     position: relative; z-index: 10;
     display: flex; gap: 2rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.8rem;
     font-family: 'Cinzel', serif;
     font-size: 0.8rem;
     letter-spacing: 0.05em;
+    transition: margin-bottom 0.5s cubic-bezier(.4,0,.2,1);
+  }
+  body.compact .stats {
+    margin-bottom: 0.5rem;
   }
   .stat { display: flex; align-items: center; gap: 0.4rem; }
   .stat-dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -124,7 +165,7 @@
   .card-stack {
     position: relative;
     width: 100%;
-    height: 520px;
+    height: 410px;
     display: flex; align-items: center; justify-content: center;
   }
 
@@ -167,15 +208,15 @@
     transition: box-shadow 0.2s ease;
   }
 
-.card-frame img {
-  width: 100%; height: 100%;
-  object-fit: contain;
-  object-position: center center;
-  display: block;
-  pointer-events: none;
-  border-radius: 12px;
-  background: var(--card-bg);
-}
+  .card-frame img {
+    width: 100%; height: 100%;
+    object-fit: contain;
+    object-position: center center;
+    display: block;
+    pointer-events: none;
+    border-radius: 12px;
+    background: var(--card-bg);
+  }
 
   /* Like/Dislike overlays */
   .vote-overlay {
@@ -222,7 +263,7 @@
   .swipe-hints {
     display: flex; justify-content: space-between;
     width: 100%; padding: 0 0.5rem;
-    margin-top: 0.8rem;
+    margin-top: 0.4rem;
     font-family: 'Cinzel', serif;
     font-size: 0.7rem;
     letter-spacing: 0.05em;
@@ -234,7 +275,7 @@
   /* Buttons */
   .action-buttons {
     display: flex; gap: 1.5rem;
-    margin-top: 1.5rem;
+    margin-top: 0.8rem;
   }
   .btn {
     width: 64px; height: 64px;
@@ -391,9 +432,9 @@
 
   /* Card info footer (shown below card) */
   .card-info {
-    margin-top: 1rem;
+    margin-top: 0.4rem;
     text-align: center;
-    min-height: 3rem;
+    min-height: 2.5rem;
   }
   .card-name {
     font-family: 'Cinzel', serif;
@@ -406,6 +447,73 @@
     color: var(--text-muted);
     font-style: italic;
   }
+  .card-set {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    color: var(--gold-dark);
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+  .card-prices {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+  .price-tag {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    border: 1px solid rgba(201, 168, 76, 0.2);
+    color: var(--text-muted);
+  }
+  .price-tag span { color: var(--gold-light); font-weight: 600; }
+  .price-tag.foil { border-color: rgba(180, 140, 255, 0.3); }
+  .price-tag.foil span { color: #c9aaff; }
+  .price-tag.etched { border-color: rgba(100, 200, 255, 0.3); }
+  .price-tag.etched span { color: #8dd8ff; }
+  .card-prices:empty { display: none; }
+
+  .card-legalities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+    justify-content: center;
+  }
+  .legality-pill {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    letter-spacing: 0.06em;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .legality-pill.legal { background: rgba(76, 175, 125, 0.15); color: var(--like); border: 1px solid rgba(76, 175, 125, 0.3); }
+  .legality-pill.not_legal { background: rgba(255,255,255,0.03); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.07); }
+  .legality-pill.banned { background: rgba(224, 82, 82, 0.15); color: var(--dislike); border: 1px solid rgba(224, 82, 82, 0.3); }
+  .legality-pill.restricted { background: rgba(255, 180, 50, 0.12); color: #f0b840; border: 1px solid rgba(255, 180, 50, 0.3); }
+  .card-legalities:empty { display: none; }
+    font-size: 0.82rem;
+    color: var(--text);
+    font-style: italic;
+    line-height: 1.5;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: rgba(201, 168, 76, 0.04);
+    border-left: 2px solid rgba(201, 168, 76, 0.2);
+    border-radius: 0 4px 4px 0;
+    text-align: left;
+    max-height: 5.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--gold-dark) transparent;
+  }
+  .card-oracle:empty { display: none; }
 
   /* Toast */
   .toast {
@@ -432,24 +540,26 @@
 
   @media (max-width: 380px) {
     .card-wrapper, .card-ghost, .loading-card, .empty-state { width: 240px; height: 335px; }
-    .card-stack { height: 440px; }
+    .card-stack { height: 360px; }
   }
-    #cardArea {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-    .card-wrapper {
-  position: relative;  /* was: absolute */
-  width: 280px;
-  height: 390px;
-  cursor: grab;
-  user-select: none;
-  z-index: 5;
-  transition: filter 0.15s ease;
-}
+
+  #cardArea {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-wrapper {
+    position: relative;
+    width: 280px;
+    height: 390px;
+    cursor: grab;
+    user-select: none;
+    z-index: 5;
+    transition: filter 0.15s ease;
+  }
 </style>
 </head>
 <body>
@@ -480,6 +590,10 @@
   <div class="card-info">
     <div class="card-name" id="cardName"></div>
     <div class="card-type" id="cardType"></div>
+    <div class="card-set" id="cardSet"></div>
+    <div class="card-prices" id="cardPrices"></div>
+    <div class="card-oracle" id="cardOracle"></div>
+    <div class="card-legalities" id="cardLegalities"></div>
   </div>
 
   <div class="swipe-hints">
@@ -501,7 +615,6 @@
     <button class="export-btn export-all" onclick="exportList('all')">✦ All</button>
   </div>
 </div>
-    
 
 <div class="export-section" style="margin-top: 0.5rem;">
   <div class="export-title">⟡ Backup & Restore ⟡</div>
@@ -523,14 +636,25 @@ const state = {
   seen: new Set(JSON.parse(localStorage.getItem('mtg-seen') || '[]')),
   current: null,
   queue: [],
-  loading: false
+  loading: false,
+  hasSwipedOnce: false   // ← track first swipe
 };
+
+// ── Compact header ──────────────────────────────────────────────────────────
+function activateCompactHeader() {
+  if (!state.hasSwipedOnce) {
+    state.hasSwipedOnce = true;
+    document.body.classList.add('compact');
+  }
+}
+
 // ── Persist ────────────────────────────────────────────────────────────────
 function saveState() {
   localStorage.setItem('mtg-liked', JSON.stringify(state.liked));
   localStorage.setItem('mtg-disliked', JSON.stringify(state.disliked));
   localStorage.setItem('mtg-seen', JSON.stringify([...state.seen]));
 }
+
 // ── Rune background ────────────────────────────────────────────────────────
 const runes = ['ᚠ','ᚢ','ᚦ','ᚨ','ᚱ','ᚲ','ᚷ','ᚹ','ᚺ','ᚾ','ᛁ','ᛃ','ᛇ','ᛈ','ᛉ','ᛊ','ᛏ','ᛒ','ᛖ','ᛗ','ᛚ','ᛜ','ᛞ','ᛟ'];
 const bgEl = document.getElementById('bgRunes');
@@ -550,10 +674,7 @@ for (let i = 0; i < 18; i++) {
 // ── Scryfall API ───────────────────────────────────────────────────────────
 async function fetchRandomCard() {
   const r = await fetch('https://api.scryfall.com/cards/random', {
-    headers: {
-      'User-Agent': 'CardSwipe/1.0',
-      'Accept': 'application/json'
-    }
+    headers: { 'User-Agent': 'CardSwipe/1.0', 'Accept': 'application/json' }
   });
   if (!r.ok) throw new Error('Network error');
   return r.json();
@@ -567,7 +688,7 @@ async function getNextCard() {
       if (state.seen.has(card.id)) { attempts++; continue; }
       const img = card.image_uris?.normal || card.card_faces?.[0]?.image_uris?.normal;
       if (!img) { attempts++; continue; }
-      return { id: card.id, name: card.name, type: card.type_line, img, set: card.set_name, manaCost: card.mana_cost || '', rarity: card.rarity };
+      return { id: card.id, name: card.name, type: card.type_line, img, set: card.set_name, manaCost: card.mana_cost || '', rarity: card.rarity, oracle: card.oracle_text || card.card_faces?.[0]?.oracle_text || '', prices: card.prices || {}, legalities: card.legalities || {} };
     } catch (e) {
       attempts++;
       await new Promise(res => setTimeout(res, 500));
@@ -580,7 +701,6 @@ async function getNextCard() {
 function renderCard(cardData) {
   state.current = cardData;
   const area = document.getElementById('cardArea');
-
   area.innerHTML = `
     <div class="card-wrapper" id="mainCard">
       <div class="card-frame">
@@ -590,10 +710,37 @@ function renderCard(cardData) {
       </div>
     </div>
   `;
-
   document.getElementById('cardName').textContent = cardData.name;
   document.getElementById('cardType').textContent = cardData.type;
+  document.getElementById('cardSet').textContent = cardData.set;
 
+  // Prices
+  const p = cardData.prices;
+  const priceEl = document.getElementById('cardPrices');
+  const priceParts = [];
+  if (p.usd)        priceParts.push(`<div class="price-tag">Normal <span>$${p.usd}</span></div>`);
+  if (p.usd_foil)   priceParts.push(`<div class="price-tag foil">Foil <span>$${p.usd_foil}</span></div>`);
+  if (p.usd_etched) priceParts.push(`<div class="price-tag etched">Etched <span>$${p.usd_etched}</span></div>`);
+  priceEl.innerHTML = priceParts.join('');
+
+  document.getElementById('cardOracle').textContent = cardData.oracle;
+
+  // Legalities — show all formats, sorted legal-first
+  const formatLabels = {
+    standard: 'Standard', pioneer: 'Pioneer', modern: 'Modern', legacy: 'Legacy',
+    vintage: 'Vintage', commander: 'Commander', pauper: 'Pauper', historic: 'Historic',
+    explorer: 'Explorer', alchemy: 'Alchemy', brawl: 'Brawl', paupercommander: 'Pauper EDH',
+    oathbreaker: 'Oathbreaker', penny: 'Penny', premodern: 'Premodern', oldschool: 'Old School'
+  };
+  const leg = cardData.legalities;
+  const legEl = document.getElementById('cardLegalities');
+  const legalityOrder = { legal: 0, restricted: 1, banned: 2, not_legal: 3 };
+  const pills = Object.entries(formatLabels)
+    .filter(([key]) => leg[key])
+    .sort(([a], [b]) => (legalityOrder[leg[a]] ?? 9) - (legalityOrder[leg[b]] ?? 9))
+    .map(([key, label]) => `<div class="legality-pill ${leg[key]}">${label}</div>`)
+    .join('');
+  legEl.innerHTML = pills;
   setupDrag();
 }
 
@@ -601,6 +748,10 @@ function showLoading() {
   document.getElementById('cardArea').innerHTML = `<div class="loading-card"><div class="spinner"></div><span>Summoning...</span></div>`;
   document.getElementById('cardName').textContent = '';
   document.getElementById('cardType').textContent = '';
+  document.getElementById('cardSet').textContent = '';
+  document.getElementById('cardPrices').innerHTML = '';
+  document.getElementById('cardOracle').textContent = '';
+  document.getElementById('cardLegalities').innerHTML = '';
 }
 
 function showEmpty() {
@@ -617,10 +768,10 @@ function setupDrag() {
   const card = document.getElementById('mainCard');
   if (!card) return;
 
-  let startX = 0, startY = 0, curX = 0, isDragging = false;
+  let startX = 0, curX = 0, isDragging = false;
 
-  function onStart(x, y) {
-    startX = x; startY = y; curX = 0;
+  function onStart(x) {
+    startX = x; curX = 0;
     isDragging = true;
     card.classList.add('dragging');
   }
@@ -653,11 +804,11 @@ function setupDrag() {
     }
   }
 
-  card.addEventListener('mousedown', e => onStart(e.clientX, e.clientY));
+  card.addEventListener('mousedown', e => onStart(e.clientX));
   window.addEventListener('mousemove', e => onMove(e.clientX));
   window.addEventListener('mouseup', onEnd);
 
-  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+  card.addEventListener('touchstart', e => onStart(e.touches[0].clientX), { passive: true });
   window.addEventListener('touchmove', e => onMove(e.touches[0].clientX), { passive: true });
   window.addEventListener('touchend', onEnd);
 }
@@ -668,15 +819,18 @@ async function vote(decision) {
   const card = document.getElementById('mainCard');
   if (!card) return;
 
+  // Shrink header on first vote
+  activateCompactHeader();
+
   state.seen.add(state.current.id);
-if (decision === 'liked') {
+  if (decision === 'liked') {
     state.liked.push(state.current);
-    saveState(); // ← add this
+    saveState();
     card.classList.add('fly-right');
     showToast('♥ Added to your collection');
   } else {
     state.disliked.push(state.current);
-    saveState(); // ← add this
+    saveState();
     card.classList.add('fly-left');
     showToast('✕ Passed');
   }
@@ -694,7 +848,6 @@ if (decision === 'liked') {
   if (!next) { showEmpty(); return; }
   renderCard(next);
 
-  // Pre-fetch one more in background
   getNextCard().then(c => { if (c) state.queue.push(c); });
 }
 
@@ -702,13 +855,12 @@ if (decision === 'liked') {
 document.getElementById('btnLike').addEventListener('click', () => vote('liked'));
 document.getElementById('btnDislike').addEventListener('click', () => vote('disliked'));
 
-// Keyboard shortcuts
 document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight' || e.key === 'l') vote('liked');
   if (e.key === 'ArrowLeft'  || e.key === 'h') vote('disliked');
 });
 
-    function clearAllData() {
+function clearAllData() {
   if (!confirm('Clear all liked, passed, and seen cards? This cannot be undone.')) return;
   state.liked = [];
   state.disliked = [];
@@ -717,21 +869,21 @@ document.addEventListener('keydown', e => {
   updateStats();
   showToast('⊘ All data cleared');
 }
+
 // ── Stats ──────────────────────────────────────────────────────────────────
 function updateStats() {
   document.getElementById('likeCount').textContent = state.liked.length;
   document.getElementById('dislikeCount').textContent = state.disliked.length;
   document.getElementById('totalCount').textContent = state.liked.length + state.disliked.length;
 
-// ── Prompt backup every 100 cards ─────────────────────────────────────────
-const total = state.liked.length + state.disliked.length;
-if (total > 0 && total % 100 === 0) {
-  setTimeout(() => {
-    if (confirm(`You've reviewed ${total} cards! Save a backup now?`)) {
-      backupState();
-    }
-  }, 600); // slight delay so the card animation finishes first
-}
+  const total = state.liked.length + state.disliked.length;
+  if (total > 0 && total % 100 === 0) {
+    setTimeout(() => {
+      if (confirm(`You've reviewed ${total} cards! Save a backup now?`)) {
+        backupState();
+      }
+    }, 600);
+  }
 }
 
 // ── Export ─────────────────────────────────────────────────────────────────
@@ -757,9 +909,7 @@ function exportList(which) {
     }
   }
 
-  if (!lines.length) {
-    showToast('No cards in this list yet!'); return;
-  }
+  if (!lines.length) { showToast('No cards in this list yet!'); return; }
 
   lines.unshift('CardSwipe — MTG Card Collection');
   lines.unshift('Generated: ' + new Date().toLocaleString());
@@ -782,6 +932,7 @@ function showToast(msg) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 2000);
 }
+
 // ── Backup & Restore ───────────────────────────────────────────────────────
 function backupState() {
   const data = {
@@ -816,14 +967,14 @@ function restoreState(event) {
     } catch {
       showToast('✕ Invalid backup file');
     }
-    event.target.value = ''; // reset so same file can be re-selected
+    event.target.value = '';
   };
   reader.readAsText(file);
 }
-// ── Init ───────────────────────────────────────────────────────────────────
+
 // ── Init ───────────────────────────────────────────────────────────────────
 (async () => {
-  updateStats(); // ← add this
+  updateStats();
   const card = await getNextCard();
   if (card) renderCard(card);
   else showEmpty();
