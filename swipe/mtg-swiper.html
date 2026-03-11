@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -479,6 +480,40 @@
   .price-tag.etched span { color: #8dd8ff; }
   .card-prices:empty { display: none; }
 
+  /* Price reveal toggle */
+  .price-reveal-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    padding: 0.2rem 0.7rem;
+    border-radius: 4px;
+    border: 1px solid rgba(201, 168, 76, 0.3);
+    background: rgba(201, 168, 76, 0.06);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+  .price-reveal-btn:hover {
+    border-color: var(--gold-dark);
+    color: var(--gold);
+    background: rgba(201, 168, 76, 0.12);
+  }
+  .price-tags-wrapper {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.3s ease;
+  }
+  .price-tags-wrapper.revealed {
+    max-height: 5rem;
+    opacity: 1;
+  }
+
   .card-legalities {
     display: flex;
     flex-wrap: wrap;
@@ -711,7 +746,15 @@ function renderCard(cardData) {
   if (p.usd)        priceParts.push(`<div class="price-tag">Normal <span>$${p.usd}</span></div>`);
   if (p.usd_foil)   priceParts.push(`<div class="price-tag foil">Foil <span>$${p.usd_foil}</span></div>`);
   if (p.usd_etched) priceParts.push(`<div class="price-tag etched">Etched <span>$${p.usd_etched}</span></div>`);
-  priceEl.innerHTML = priceParts.join('');
+
+  if (priceParts.length) {
+    priceEl.innerHTML = `
+      <button class="price-reveal-btn" onclick="togglePrices(this)">🔍 Reveal Price</button>
+      <div class="price-tags-wrapper">${priceParts.join('')}</div>
+    `;
+  } else {
+    priceEl.innerHTML = '';
+  }
 
   document.getElementById('cardOracle').textContent = cardData.oracle;
 
@@ -911,6 +954,13 @@ function exportList(which) {
   a.download = `mtg-${which}-${Date.now()}.txt`;
   a.click();
   showToast('✦ Exported successfully!');
+}
+
+// ── Price reveal ───────────────────────────────────────────────────────────
+function togglePrices(btn) {
+  const wrapper = btn.nextElementSibling;
+  const revealed = wrapper.classList.toggle('revealed');
+  btn.textContent = revealed ? '🔒 Hide Price' : '🔍 Reveal Price';
 }
 
 // ── Toast ──────────────────────────────────────────────────────────────────
